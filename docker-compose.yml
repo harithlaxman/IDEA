@@ -1,0 +1,36 @@
+services:
+  app:
+    container_name: idea-app
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      MAIN_DATABASE_URL: ${MAIN_DATABASE_URL:?set it in .env}
+      IPEDS_DATABASE_URL: ${IPEDS_DATABASE_URL:?set it in .env}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  db:
+    image: postgres:18
+    container_name: idea-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: idea
+      POSTGRES_DB: idea_main
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+volumes:
+  pgdata:
+    name: pgdata

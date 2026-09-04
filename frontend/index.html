@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" hx-boost="true">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDEA — IPEDS Data Exploration Assistant</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/htmx.min.js"></script>
+  <!-- Before app.js: deferred scripts run in document order, so `marked` and
+       `DOMPurify` exist by the time app.js renders its first card. -->
+  <script src="/static/marked.umd.js" defer></script>
+  <script src="/static/purify.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <span class="app-title">IDEA: IPEDS Data Exploration Assistant</span>
+    <span class="app-user">{{ email }} · <a href="#" class="logout-link" id="logout-link">Log out</a></span>
+  </header>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-header">History</h3>
+        <button class="btn btn-primary btn-block" id="new-analysis-btn">+ New Analysis</button>
+        <div id="session-list" hx-get="/frag/sessions" hx-trigger="load, sessionChanged from:body" hx-swap="innerHTML">
+        </div>
+      </div>
+
+      <hr class="sidebar-divider">
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-header">Reports</h3>
+        <button class="btn btn-secondary btn-block" id="rate-btn" disabled>✩ Rate Last Reply</button>
+        <button class="btn btn-secondary btn-block" id="delete-btn"
+                hx-get="/frag/delete-history" hx-target="#modal-backdrop"
+                hx-swap="innerHTML">✖ Delete History</button>
+      </div>
+
+      <hr class="sidebar-divider">
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-header">Account</h3>
+        <!-- htmx, not fetchAndShowModal: an innerHTML assignment doesn't run
+             the fragment's inline <script>, and htmx's swap does. -->
+        <button class="btn btn-secondary btn-block" id="prefs-btn"
+                hx-get="/frag/preferences" hx-target="#modal-backdrop"
+                hx-swap="innerHTML">⚙ Preferences</button>
+      </div>
+
+      <hr class="sidebar-divider">
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-header">Support</h3>
+        <a class="btn btn-secondary btn-block" href="https://drive.google.com/file/d/1hx7sEgrKhS66nFhuY-xHEyDXirOnAkUG/view?usp=drive_link" target="_blank" rel="noopener">🛈 About</a>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content" id="main-content">
+      {% include "fragments/welcome.html" %}
+    </main>
+  </div>
+
+  <!-- Bottom input bar -->
+  <div class="bottom-bar">
+    <form id="message-form" class="message-form">
+      <input type="text" id="message-input" name="message"
+             placeholder="Enter your message (e.g., 'Explore high-level distributions')"
+             autocomplete="off" required>
+      <button type="submit" class="btn btn-primary" id="submit-btn">Run</button>
+    </form>
+    <!-- How much of the model's context window this session carries. Filled by
+         app.js from the usage SSE event and from the swapped-in fragment. -->
+    <div id="context-meter" class="context-meter" hidden></div>
+  </div>
+
+  <!-- Modal backdrop for dialogs -->
+  <div id="modal-backdrop"></div>
+
+  <!-- One source for the empty-state markup, shared with fragments/main.html
+       and read out of this template when app.js starts a new analysis. -->
+  <template id="welcome-tpl">{% include "fragments/welcome.html" %}</template>
+
+  <script>
+    // expose current session id to htmx fragment URLs (see app.js)
+    window.dwCurrentSessionId = null;
+  </script>
+</body>
+</html>

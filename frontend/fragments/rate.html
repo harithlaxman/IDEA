@@ -1,0 +1,58 @@
+{% from "fragments/_modal.html" import modal %}
+{% if message %}
+{% call modal("rate-modal", "Report an Issue / Rate last response") %}
+      <p><strong>Most recent message:</strong> {{ message.message[:200] }}</p>
+      <form id="rate-form">
+        <label class="form-label">Rating</label>
+        <div class="rating-row">
+          {% for r in [1,2,3,4,5] %}
+          <label class="rating-option"><input type="radio" name="rating" value="{{ r }}" {% if r == 5 %}checked{% endif %}> {{ r }}</label>
+          {% endfor %}
+        </div>
+
+        <label class="form-label">Issue type (optional)</label>
+        <select name="issue_type" class="form-input">
+          {% for it in ["None", "Wrong result", "Error/Crash", "Slow", "Missing output/plot", "Other"] %}
+          <option value="{{ it }}" {% if it == "None" %}selected{% endif %}>{{ it }}</option>
+          {% endfor %}
+        </select>
+
+        <label class="form-label">Notes (optional)</label>
+        <textarea name="comment" class="form-input" rows="3"></textarea>
+
+        <button type="submit" class="btn btn-primary btn-block">Submit</button>
+      </form>
+      <div id="rate-result"></div>
+{% endcall %}
+      <script>
+        (function () {
+          const form = document.getElementById('rate-form');
+          if (!form) return;
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(form);
+            const body = {
+              rating: parseInt(fd.get('rating'), 10),
+              issue_type: fd.get('issue_type'),
+              comment: (fd.get('comment') || '').trim(),
+            };
+            const resp = await fetch('/sessions/{{ session_id }}/messages/{{ message.id }}/feedback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+            const result = document.getElementById('rate-result');
+            if (resp.ok) {
+              result.innerHTML = '<div class="pending-notice" style="background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32;">Saved. Thanks!</div>';
+              setTimeout(window.dwCloseModal, 800);
+            } else {
+              result.innerHTML = '<div class="pending-notice">Failed to save feedback.</div>';
+            }
+          });
+        })();
+      </script>
+{% else %}
+{% call modal("rate-modal", "Rate Last Reply") %}
+      <p>No responses yet to rate.</p>
+{% endcall %}
+{% endif %}

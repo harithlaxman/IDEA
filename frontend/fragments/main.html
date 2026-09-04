@@ -1,0 +1,64 @@
+{% if messages|length == 0 %}
+{% include "fragments/welcome.html" %}
+{% else %}
+{# data-clarify-pending / data-confirm-pending tell a reloaded page the agent
+   is still waiting, and which control answers it: a clarify is typed into the
+   composer, a confirm is clicked. Derived from the checkpoint in
+   pages.frag_session; app.js reads them back on htmx:afterSwap. #}
+<div class="message-list" id="message-list" data-session-id="{{ session.id }}"
+     {% if pending and pending.kind == "clarify" %}data-clarify-pending="1"{% endif %}
+     {% if pending and pending.kind == "confirm" %}data-confirm-pending="1"{% endif %}>
+  {% for m in messages %}
+    {% if m.role == "user" %}
+    <div class="msg msg-user"><div class="bubble bubble-user">{{ m.content }}</div></div>
+    {% else %}
+    <div class="msg msg-assistant" id="message-{{ m.id }}">
+      <div class="bubble bubble-assistant">
+        {# Mirrors the markup app.js builds live, collapsed for history.
+           log_entries drops the trailing text entry, which renders below as
+           .message-text; a failed turn promoted nothing, so it keeps all of it. #}
+        {% set entries = m.log_entries %}
+        {% if entries %}
+        <details class="tool-log">
+          {# A prose-only log (failed turn, or a clarification before its first
+             tool call) needs a label that isn't a count. Matches finalizeLog. #}
+          <summary>{% if m.tool_count %}{{ m.tool_count }} tool call{{ '' if m.tool_count == 1 else 's' }}{% else %}Details{% endif %}</summary>
+          <ol class="tool-rows">
+            {% for e in entries %}
+              {% if e.kind == 'text' %}
+            <li class="tool-row tool-text">{{ e.text }}</li>
+              {% else %}
+            <li class="tool-row {{ 'done' if e.ok else 'error' }}">{{ e.name }}</li>
+              {% endif %}
+            {% endfor %}
+          </ol>
+        </details>
+        {% endif %}
+        {% if m.error %}
+        <div class="message-error">{{ m.error }}</div>
+        {% else %}
+        <div class="message-text" data-md>{{ m.content }}</div>
+        {% endif %}
+        {% if pending and loop.last %}
+          {% if pending.kind == "confirm" %}
+        {# Same markup app.js builds live, so the buttons survive a reload. #}
+        <div class="confirm-actions">
+          <button class="btn btn-primary" data-decision="approve">Approve</button>
+          <button class="btn btn-secondary" data-decision="reject">Reject</button>
+        </div>
+          {% else %}
+        <div class="awaiting-answer">Awaiting your answer</div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+<div id="pending-notice"></div>
+{# The context meter lives in the bottom bar, outside this fragment. app.js
+   reads the numbers off here on htmx:afterSwap, the same way it reads
+   data-clarify-pending back off #message-list. #}
+<div id="context-usage" hidden{% if usage %} data-tokens="{{ usage.tokens }}"
+     data-window="{{ usage.window }}" data-exact="{{ '1' if usage.exact else '' }}"{% endif %}></div>

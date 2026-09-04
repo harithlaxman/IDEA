@@ -1,0 +1,44 @@
+<div class="modal" id="narrative-modal">
+  <div class="modal-backdrop" onclick="window.dwCloseModal()"></div>
+  <div class="modal-card modal-large">
+    <div class="modal-header">
+      <h3>Final Narrative</h3>
+      <button class="modal-close" onclick="window.dwCloseModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="narrative-actions">
+        <button class="btn btn-primary" id="narrative-regen-btn">Generate / Regenerate</button>
+      </div>
+      <div id="narrative-content" class="narrative-content markdown-body">
+        <pre>{{ markdown }}</pre>
+      </div>
+      <div class="narrative-download">
+        <a class="btn btn-secondary btn-block"
+           href="data:text/markdown;charset=utf-8,{{ markdown | urlencode }}"
+           download="final_exploration_narrative.md">Download Narrative (Markdown)</a>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (function () {
+    const btn = document.getElementById('narrative-regen-btn');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.textContent = 'Generating…';
+      try {
+        const resp = await fetch('/sessions/{{ session_id }}/narrative/regenerate', { method: 'POST' });
+        const data = await resp.json();
+        const content = document.getElementById('narrative-content');
+        content.innerHTML = '<pre>' + (data.markdown || '').replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</pre>';
+        // Update download link
+        const dl = document.querySelector('.narrative-download a');
+        if (dl) dl.href = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(data.markdown || '');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate / Regenerate';
+      }
+    })();
+  })();
+</script>

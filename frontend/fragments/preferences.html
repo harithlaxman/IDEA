@@ -1,0 +1,35 @@
+{% from "fragments/_modal.html" import modal %}
+{% call modal("preferences-modal", "Your Preferences") %}
+      <p>Standing instructions the agent applies to every analysis. It reads
+      these on every turn, and may ask to add one when you state a preference
+      in chat.</p>
+      <form id="preferences-form">
+        <label class="form-label" for="preferences-text">One preference per line</label>
+        <textarea id="preferences-text" name="text" class="form-input" rows="8"
+                  placeholder="e.g. Only include public 4-year institutions">{{ items | join("\n") }}</textarea>
+        <button type="submit" class="btn btn-primary btn-block">Save</button>
+      </form>
+      <div id="preferences-result"></div>
+{% endcall %}
+      <script>
+        (function () {
+          const form = document.getElementById('preferences-form');
+          if (!form) return;
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('preferences-text').value;
+            const resp = await fetch('/preferences', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text }),
+            });
+            const result = document.getElementById('preferences-result');
+            if (resp.ok) {
+              result.innerHTML = '<div class="pending-notice" style="background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32;">Saved.</div>';
+              setTimeout(window.dwCloseModal, 800);
+            } else {
+              result.innerHTML = '<div class="pending-notice">Failed to save preferences.</div>';
+            }
+          });
+        })();
+      </script>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DataWeave — Sign in</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="login-title">🎓 IDEA</div>
+    <div class="login-tagline">IPEDS Data Exploration Assistant</div>
+    <div class="login-subtitle">Sign in with your Google account to continue</div>
+
+    {% if dev_bypass %}
+    <form id="dev-login-form" class="login-form">
+      <input type="email" name="email" placeholder="you@example.edu" required
+             class="login-input" autocomplete="email">
+      <button type="submit" class="btn btn-primary login-btn">🔐 Dev sign in</button>
+    </form>
+    <p class="login-hint">Dev bypass is on — any allowlisted email works, no Google.</p>
+    {% elif oauth_configured %}
+    <a href="/auth/login" class="btn btn-primary login-btn">🔐 Sign in with Google</a>
+    {% else %}
+    <p class="login-hint">No auth configured. Set GOOGLE_CLIENT_ID/SECRET or DEV_AUTH_BYPASS=1.</p>
+    {% endif %}
+  </div>
+  <script>
+    document.getElementById('dev-login-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = e.target.email.value.trim().toLowerCase();
+      const resp = await fetch('/auth/dev-login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email}),
+      });
+      if (resp.ok) {
+        window.location.href = '/';
+      } else {
+        const detail = await resp.json().catch(() => ({}));
+        alert(detail.detail || 'Sign in failed');
+      }
+    });
+  </script>
+</body>
+</html>

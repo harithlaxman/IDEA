@@ -1,0 +1,17 @@
+{% if sessions|length == 0 %}
+<div class="empty-state">No previous analyses found.</div>
+{% else %}
+<ul class="session-list">
+  {% for s in sessions %}
+  <li class="session-item" data-session-id="{{ s.id }}">
+    <button class="btn btn-tertiary btn-block session-btn"
+            hx-get="/frag/session/{{ s.id }}"
+            hx-target="#main-content"
+            hx-swap="innerHTML"
+            onclick="window.dwCurrentSessionId='{{ s.id }}';window.dwEnableReports()">
+      <span class="session-title">{{ s.title[:50] }}</span>
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

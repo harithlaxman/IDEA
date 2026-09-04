@@ -1,0 +1,50 @@
+{% from "fragments/_modal.html" import modal %}
+{% call modal("delete-modal", "Delete saved analyses") %}
+      {% if sessions|length == 0 %}
+      <p>No previous analyses found.</p>
+      {% else %}
+      <form id="delete-form">
+        <ul class="delete-list">
+          {% for s in sessions %}
+          <li>
+            <label class="delete-option">
+              <input type="checkbox" name="ids" value="{{ s.id }}">
+              <span>{{ s.title[:100] }}</span>
+            </label>
+          </li>
+          {% endfor %}
+        </ul>
+        <hr class="sidebar-divider">
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="window.dwCloseModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="delete-confirm-btn" disabled>Delete selected</button>
+        </div>
+      </form>
+      {% endif %}
+{% endcall %}
+<script>
+  // wire delete form
+  (function() {
+    const form = document.getElementById('delete-form');
+    if (!form) return;
+    const confirmBtn = document.getElementById('delete-confirm-btn');
+    form.addEventListener('change', () => {
+      const checked = form.querySelectorAll('input[name="ids"]:checked').length;
+      confirmBtn.disabled = checked === 0;
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ids = Array.from(form.querySelectorAll('input[name="ids"]:checked')).map(i => i.value);
+      if (ids.length === 0) return;
+      const resp = await fetch('/sessions', {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids}),
+      });
+      if (resp.ok) {
+        window.dwCloseModal();
+        document.body.dispatchEvent(new Event('sessionChanged'));
+      }
+    });
+  })();
+</script>
